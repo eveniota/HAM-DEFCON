@@ -14,26 +14,28 @@ KEYS_DIR = os.getenv("KEYS_DIR", "/service/keys")
 PRIVATE_KEY_PATH = os.path.join(KEYS_DIR, "private.pem")
 PUBLIC_KEY_PATH = os.path.join(KEYS_DIR, "public.pem")
 
-def ensure_rsa_key():
+def ensure_rsa_keys():
     os.makedirs(KEYS_DIR, exist_ok=True)
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-    )
+    if not os.path.exists(PRIVATE_KEY_PATH) or not os.path.exists(PUBLIC_KEY_PATH):
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+        )
+        priv_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        pub_pem = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        with open(PRIVATE_KEY_PATH, "wb") as f:
+            f.write(priv_pem)
+        with open(PUBLIC_KEY_PATH, "wb") as f:
+            f.write(pub_pem)
 
-    priv_pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-    pub_pem = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    with open(PRIVATE_KEY_PATH, "wb") as f:
-        f.write(priv_pem)
-    with open(PUBLIC_KEY_PATH, "wb") as f:
-        f.write(pub_pem)
+ensure_rsa_key = ensure_rsa_keys
 
 
 def get_private_key_pem() -> bytes:

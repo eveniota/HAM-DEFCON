@@ -27,8 +27,8 @@ def init_db():
                 client_id TEXT PRIMARY KEY,
                 client_secret TEXT NOT NULL,
                 name TEXT NOT NULL,
-                allowed_redirect TEXT NOT NULL,
-            )
+                allowed_redirect TEXT NOT NULL
+            );
         """)
 
         conn.execute("""

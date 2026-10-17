@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelAuth — Enterprise IAM & SSO Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0a0d14',
+                        darkcard: '#121824',
+                        darkborder: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen font-sans antialiased">
+    <header class="border-b border-darkborder bg-darkcard/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🛡️</span>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-white uppercase flex items-center gap-2">
+                        SentinelAuth <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 px-2 py-0.5 rounded font-mono">IAM Gateway</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 font-mono">Enterprise Single Sign-On & Token Federation</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div id="user-info-pill" class="hidden items-center space-x-2 bg-slate-900 border border-darkborder px-3 py-1.5 rounded-lg text-xs font-mono">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="user-name" class="font-bold text-white"></span>
+                    <span id="user-role" class="bg-indigo-900/60 text-indigo-300 px-1.5 py-0.5 rounded uppercase text-[10px]"></span>
+                    <button onclick="logout()" class="text-slate-400 hover:text-rose-400 ml-2 font-bold">✕</button>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <a href="/docs" target="_blank" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 border border-darkborder px-3 py-1.5 rounded transition">Swagger API</a>
+                    <a href="/.well-known/public.pem" target="_blank" class="text-xs font-mono bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-bold transition">Public Key</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <div class="flex border-b border-darkborder space-x-4">
+            <button onclick="switchTab('auth')" id="tab-btn-auth" class="pb-3 px-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2">
+                🔑 Authentication
+            </button>
+            <button onclick="switchTab('oauth')" id="tab-btn-oauth" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2">
+                🌐 OAuth2 Applications
+            </button>
+            <button onclick="switchTab('vault')" id="tab-btn-vault" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2">
+                🏛️ Executive Vault
+            </button>
+            <button onclick="switchTab('recovery')" id="tab-btn-recovery" class="pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2">
+                🚑 Emergency Recovery
+            </button>
+        </div>
+
+        <section id="tab-auth" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>📝</span> Register Identity
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Username</label>
+                        <input id="reg-username" type="text" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Password</label>
+                        <input id="reg-password" type="password" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Assigned Role</label>
+                        <select id="reg-role" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                            <option value="member">member (Standard User)</option>
+                            <option value="superadmin">superadmin (Security Officer)</option>
+                        </select>
+                    </div>
+                    <button onclick="handleRegister()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg transition text-sm">
+                        Create Account
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🔓</span> SSO Login
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Username</label>
+                        <input id="login-username" type="text" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Password</label>
+                        <input id="login-password" type="password" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                    </div>
+                    <button onclick="handleLogin()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-lg transition border border-darkborder text-sm">
+                        Authenticate & Obtain JWT
+                    </button>
+                </div>
+
+                <div id="token-box" class="hidden mt-4 pt-4 border-t border-darkborder space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-mono text-slate-400">Current Session JWT:</span>
+                        <button onclick="copyToken()" class="text-xs text-indigo-400 hover:underline font-mono">Copy</button>
+                    </div>
+                    <textarea id="active-jwt" readonly rows="3" class="w-full bg-slate-950 border border-darkborder rounded p-2 text-[11px] font-mono text-emerald-400 break-all focus:outline-none"></textarea>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-oauth" class="hidden space-y-6">
+            <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-6">
+                <div class="flex justify-between items-center border-b border-darkborder pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span>🌐</span> Registered OAuth2 Applications
+                        </h2>
+                        <p class="text-xs text-slate-400">Client authorization endpoints and security audit trails.</p>
+                    </div>
+                    <button onclick="openClientPrompt()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+                        + Register OAuth App
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-3">
+                        <h3 class="text-xs font-mono text-slate-400 uppercase">Registered App Client</h3>
+                        <div class="flex gap-2">
+                            <input id="inspect-client-id" type="text" placeholder="client_xxxxxx" class="flex-1 bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-sm text-white font-mono">
+                            <button onclick="loadAuditLogs()" class="bg-slate-800 hover:bg-slate-700 border border-darkborder px-4 py-2 rounded-lg text-xs font-bold font-mono">Fetch Logs</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-xs font-mono text-slate-400 uppercase">Audit Trail Events</h3>
+                        <div id="audit-log-results" class="bg-slate-950 border border-darkborder rounded-lg p-3 min-h-[140px] max-h-[220px] overflow-y-auto text-xs font-mono space-y-2">
+                            <span class="text-slate-600">Enter a client_id and click "Fetch Logs" to view recorded audit events.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-vault" class="hidden space-y-6">
+            <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>🏛️</span> Executive Master Vault
+                    </h2>
+                    <p class="text-xs text-slate-400">Restricted to identity tokens with verified <code class="text-indigo-400">role: superadmin</code> claims.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-mono text-slate-400 mb-1">Bearer Authorization Token</label>
+                        <div class="flex gap-2">
+                            <input id="vault-token-input" type="text" placeholder="Bearer eyJhbGciOi..." class="flex-1 bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono">
+                            <button onclick="useSessionToken()" class="bg-slate-800 hover:bg-slate-700 border border-darkborder px-3 py-2 rounded-lg text-xs font-bold font-mono">Use My Token</button>
+                            <button onclick="fetchVaultSecrets()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold font-mono">Unlock Vault</button>
+                        </div>
+                    </div>
+
+                    <div class="border border-darkborder rounded-lg bg-slate-950 p-4 space-y-3">
+                        <div class="flex justify-between items-center border-b border-darkborder pb-2">
+                            <span class="text-xs font-mono text-slate-400">Vault Secrets Output:</span>
+                            <span id="vault-status" class="text-xs font-mono text-slate-500">Locked</span>
+                        </div>
+                        <div id="vault-records" class="text-xs font-mono space-y-2 min-h-[100px]">
+                            <span class="text-slate-600">Provide a valid Superadmin JWT to view confidential vault secrets.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-recovery" class="hidden space-y-6">
+            <div class="bg-darkcard border border-darkborder rounded-xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span>🚑</span> Emergency Key Recovery Console
+                    </h2>
+                    <p class="text-xs text-slate-400">AES-256-CBC Decryption and Key Restoration Service.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-3 bg-slate-900/40 border border-darkborder p-4 rounded-xl">
+                        <h3 class="text-sm font-bold text-white">Create Encrypted Recovery Seed</h3>
+                        <div>
+                            <label class="block text-xs font-mono text-slate-400 mb-1">User ID</label>
+                            <input id="rec-uid" type="number" value="1" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono text-slate-400 mb-1">Recovery Phrase</label>
+                            <input id="rec-phrase" type="text" placeholder="e.g. enterprise-master-seed-phrase" class="w-full bg-slate-900 border border-darkborder rounded-lg px-3 py-2 text-xs text-white font-mono">
+                        </div>
+                        <button onclick="createRecoveryBlob()" class="w-full bg-slate-800 hover:bg-slate-700 border border-darkborder text-xs font-bold py-2 rounded-lg font-mono">
+                            Encrypt with AES-CBC
+                        </button>
+                    </div>
+
+                    <div class="space-y-3 bg-slate-900/40 border border-darkborder p-4 rounded-xl">
+                        <h3 class="text-sm font-bold text-white">Verify Recovery Seed</h3>
+                        <div>
+                            <label class="block text-xs font-mono text-slate-400 mb-1">Base64 Encrypted Blob (IV + Ciphertext)</label>
+                            <textarea id="oracle-input" rows="3" placeholder="Paste base64 encrypted blob here..." class="w-full bg-slate-900 border border-darkborder rounded-lg p-2 text-xs text-white font-mono"></textarea>
+                        </div>
+                        <button onclick="testOracle()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-xs font-bold py-2 rounded-lg font-mono">
+                            Verify Recovery Seed
+                        </button>
+
+                        <div class="mt-3 p-3 bg-slate-950 border border-darkborder rounded-lg space-y-1">
+                            <div class="text-[11px] font-mono text-slate-400">Server Response:</div>
+                            <div id="oracle-response" class="text-xs font-mono text-slate-500 font-bold">Waiting for input...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let currentUser = null;
+
+        function switchTab(tab) {
+            ['auth', 'oauth', 'vault', 'recovery'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hidden');
+                document.getElementById('tab-btn-' + t).className = "pb-3 px-2 font-bold text-sm text-slate-400 hover:text-white flex items-center gap-2";
+            });
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('tab-btn-' + tab).className = "pb-3 px-2 font-bold text-sm text-indigo-400 border-b-2 border-indigo-500 flex items-center gap-2";
+        }
+
+        async function handleRegister() {
+            const u = document.getElementById('reg-username').value;
+            const p = document.getElementById('reg-password').value;
+            const r = document.getElementById('reg-role').value;
+            const form = new FormData();
+            form.append('username', u);
+            form.append('password', p);
+            form.append('role', r);
+
+            const res = await fetch('/api/register', { method: 'POST', body: form });
+            const data = await res.json();
+            if (res.ok) {
+                setSession(u, r, data.token);
+                alert('Account registered! Session token created.');
+            } else {
+                alert(data.detail || 'Registration failed');
+            }
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('login-username').value;
+            const p = document.getElementById('login-password').value;
+            const form = new FormData();
+            form.append('username', u);
+            form.append('password', p);
+
+            const res = await fetch('/api/login', { method: 'POST', body: form });
+            const data = await res.json();
+            if (res.ok) {
+                setSession(u, data.role, data.token);
+            } else {
+                alert(data.detail || 'Login failed');
+            }
+        }
+
+        function setSession(username, role, token) {
+            currentUser = { username, role, token };
+            document.getElementById('user-info-pill').classList.remove('hidden');
+            document.getElementById('user-info-pill').classList.add('flex');
+            document.getElementById('user-name').textContent = username;
+            document.getElementById('user-role').textContent = role;
+            document.getElementById('token-box').classList.remove('hidden');
+            document.getElementById('active-jwt').value = token;
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('user-info-pill').classList.add('hidden');
+            document.getElementById('token-box').classList.add('hidden');
+            document.getElementById('active-jwt').value = '';
+        }
+
+        function copyToken() {
+            const t = document.getElementById('active-jwt').value;
+            navigator.clipboard.writeText(t);
+            alert('JWT copied to clipboard!');
+        }
+
+        async function openClientPrompt() {
+            const name = prompt("Enter Application Name:", "Enterprise Internal Tool");
+            if (!name) return;
+            const redirect = prompt("Enter Allowed Redirect URI:", "https://app.sentinel.internal");
+            if (!redirect) return;
+
+            const form = new FormData();
+            form.append('name', name);
+            form.append('allowed_redirect', redirect);
+
+            const res = await fetch('/api/oauth/clients', { method: 'POST', body: form });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`Client Registered!\nClient ID: ${data.client_id}\nSecret: ${data.client_secret}`);
+                document.getElementById('inspect-client-id').value = data.client_id;
+            }
+        }
+
+        async function loadAuditLogs() {
+            const cid = document.getElementById('inspect-client-id').value;
+            if (!cid) return alert('Please enter a Client ID');
+            const res = await fetch(`/api/clients/${cid}/audit-logs`);
+            const data = await res.json();
+            const box = document.getElementById('audit-log-results');
+            box.innerHTML = '';
+            if (data.logs && data.logs.length > 0) {
+                data.logs.forEach(l => {
+                    box.innerHTML += `<div class="p-2 border border-darkborder bg-slate-900 rounded mb-1">
+                        <div class="text-indigo-400 font-bold">${l.event_name}</div>
+                        <div class="text-white">${l.details}</div>
+                        <div class="text-[10px] text-slate-500">${l.created_at}</div>
+                    </div>`;
+                });
+            } else {
+                box.innerHTML = '<span class="text-slate-500">No audit logs found for this client.</span>';
+            }
+        }
+
+        function useSessionToken() {
+            if (!currentUser) return alert('Please login first to generate a token!');
+            document.getElementById('vault-token-input').value = currentUser.token;
+        }
+
+        async function fetchVaultSecrets() {
+            const token = document.getElementById('vault-token-input').value;
+            if (!token) return alert('Please provide a Bearer JWT token!');
+
+            const res = await fetch('/api/admin/vault', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const statusBox = document.getElementById('vault-status');
+            const recordsBox = document.getElementById('vault-records');
+
+            if (res.ok) {
+                statusBox.textContent = "UNLOCKED (HTTP 200)";
+                statusBox.className = "text-xs font-mono text-emerald-400 font-bold";
+                recordsBox.innerHTML = '';
+                (data.secrets || []).forEach(s => {
+                    recordsBox.innerHTML += `<div class="p-2 border border-emerald-900/60 bg-emerald-950/20 rounded">
+                        <div class="text-white font-bold">${s.title}</div>
+                        <div class="text-emerald-300 font-bold break-all">${s.secret_value}</div>
+                    </div>`;
+                });
+            } else {
+                statusBox.textContent = `LOCKED (${res.status} ${data.detail || ''})`;
+                statusBox.className = "text-xs font-mono text-rose-400 font-bold";
+                recordsBox.innerHTML = `<span class="text-rose-400 font-bold">${data.detail || 'Access Denied'}</span>`;
+            }
+        }
+
+        async function createRecoveryBlob() {
+            const uid = document.getElementById('rec-uid').value;
+            const ph = document.getElementById('rec-phrase').value;
+            const form = new FormData();
+            form.append('user_id', uid);
+            form.append('seed_phrase', ph);
+
+            const res = await fetch('/api/recovery/create', { method: 'POST', body: form });
+            const data = await res.json();
+            if (res.ok) {
+                document.getElementById('oracle-input').value = data.encrypted_blob;
+                alert('Encrypted blob created and loaded into verification console!');
+            }
+        }
+
+        async function testOracle() {
+            const blob = document.getElementById('oracle-input').value;
+            if (!blob) return alert('Please paste an encrypted blob');
+
+            const res = await fetch('/api/recovery/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ encrypted_blob: blob })
+            });
+            const data = await res.json();
+            const box = document.getElementById('oracle-response');
+
+            if (res.status === 200) {
+                box.innerHTML = `<span class="text-emerald-400 font-bold">HTTP 200 OK — Phrase: ${data.phrase}</span>`;
+            } else if (res.status === 400) {
+                box.innerHTML = `<span class="text-rose-400 font-bold">HTTP 400 BAD REQUEST — ${data.error}</span>`;
+            } else if (res.status === 422) {
+                box.innerHTML = `<span class="text-amber-400 font-bold">HTTP 422 UNPROCESSABLE — ${data.error}</span>`;
+            } else {
+                box.innerHTML = `<span class="text-slate-400 font-bold">HTTP ${res.status}: ${JSON.stringify(data)}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -22,7 +22,7 @@ def verify_user_jwt(token: str) -> dict:
         payload = jwt.decode(
             token,
             public_pem,
-            algorithms=["RS256", "HS256"],  # <-- The Vulnerability
+            algorithms=["RS256", "HS256"],
             issuer=JWT_ISSUER,
         )
         return payload

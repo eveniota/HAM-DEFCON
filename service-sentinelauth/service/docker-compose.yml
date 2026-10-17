@@ -1,0 +1,8 @@
+services:
+  sentinelauth:
+    build: .
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
