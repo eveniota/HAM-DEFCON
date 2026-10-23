@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  terminal:
+    image: tsl0922/ttyd:latest
+    container_name: team${TEAM_ID}-terminal
+    restart: unless-stopped
+    ports:
+      - "${PORT_TTYD}:7681"
+    volumes:
+      - ./data/team${TEAM_ID}:/home/team${TEAM_ID}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    command: ["ttyd", "-c", "${TEAM_USER}:${TEAM_PASS}", "-p", "7681", "-w", "/home/team${TEAM_ID}", "bash"]
+
+  docuvault:
+    build: ./HAM-DEFCON/service-docuvault/service
+    container_name: team${TEAM_ID}-docuvault
+    restart: unless-stopped
+    ports:
+      - "${PORT_DOCUVAULT}:8000"
+    volumes:
+      - ./data/team${TEAM_ID}/docuvault_data:/data
+      - ./data/team${TEAM_ID}/docuvault:/service/app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  pulsechat:
+    build: ./HAM-DEFCON/service-pulsechat/service
+    container_name: team${TEAM_ID}-pulsechat
+    restart: unless-stopped
+    ports:
+      - "${PORT_PULSECHAT}:8001"
+    environment:
+      - DATA_DIR=/data
+    volumes:
+      - ./data/team${TEAM_ID}/pulsechat_data:/data
+      - ./data/team${TEAM_ID}/pulsechat:/service/app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+  swiftshop:
+    build: ./HAM-DEFCON/service-swiftshop/service
+    container_name: team${TEAM_ID}-swiftshop
+    restart: unless-stopped
+    ports:
+      - "${PORT_SWIFTSHOP}:8003"
+    environment:
+      - DB_PATH=/data/swiftshop.db
+      - SESSION_SECRET=swiftshop_session_auth_key_2026
+      - VOUCHER_SECRET=shop_merchant_promokey_prod_32b!
+    volumes:
+      - ./data/team${TEAM_ID}/swiftshop_data:/data
+      - ./data/team${TEAM_ID}/swiftshop:/app/app
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
