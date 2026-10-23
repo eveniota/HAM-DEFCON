@@ -25,11 +25,11 @@ def setup_team_directories():
         os.makedirs(f"{team_dir}/swiftshop_data", exist_ok=True)
 
         if not os.path.exists(f"{team_dir}/docuvault"):
-            shutil.copytree("./HAM-DEFCON/service-docuvault/service/app", f"{team_dir}/docuvault")
+            shutil.copytree("./services/service-docuvault/service/app", f"{team_dir}/docuvault")
         if not os.path.exists(f"{team_dir}/pulsechat"):
-            shutil.copytree("./HAM-DEFCON/service-pulsechat/service/app", f"{team_dir}/pulsechat")
+            shutil.copytree("./services/service-pulsechat/service/app", f"{team_dir}/pulsechat")
         if not os.path.exists(f"{team_dir}/swiftshop"):
-            shutil.copytree("./HAM-DEFCON/service-swiftshop/service/app", f"{team_dir}/swiftshop")
+            shutil.copytree("./services/service-swiftshop/service/app", f"{team_dir}/swiftshop")
 
         env_content = f"""TEAM_ID={team_id}
                     TEAM_USER={team_user}

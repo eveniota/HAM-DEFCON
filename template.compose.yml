@@ -16,7 +16,7 @@ services:
     command: ["ttyd", "-c", "${TEAM_USER}:${TEAM_PASS}", "-p", "7681", "-w", "/home/team${TEAM_ID}", "bash"]
 
   docuvault:
-    build: ./HAM-DEFCON/service-docuvault/service
+    build: services/service-docuvault/service
     container_name: team${TEAM_ID}-docuvault
     restart: unless-stopped
     ports:
@@ -31,7 +31,7 @@ services:
           memory: 128M
 
   pulsechat:
-    build: ./HAM-DEFCON/service-pulsechat/service
+    build: services/service-pulsechat/service
     container_name: team${TEAM_ID}-pulsechat
     restart: unless-stopped
     ports:
@@ -48,7 +48,7 @@ services:
           memory: 128M
 
   swiftshop:
-    build: ./HAM-DEFCON/service-swiftshop/service
+    build: services/service-swiftshop/service
     container_name: team${TEAM_ID}-swiftshop
     restart: unless-stopped
     ports:
